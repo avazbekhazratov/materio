@@ -16,6 +16,15 @@ def magazin_inspection(request):
 
 
 def user_deletes(request, params):
-    a = User.objects.get(username=params['name'])
-    a.delete()
-    return True
+    try:
+        ombor = User.objects.get(id=params['id'])
+        ombor.delete()
+        return custom_response(status=True, message="Succes")
+    except User.DoesNotExist:
+        return custom_response(status=False, message={"Error": "gg"})
+
+
+def get_user(request, params):
+    return {
+        "result": [x.formats_users() for x in User.objects.all()]
+    }

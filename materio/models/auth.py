@@ -41,6 +41,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     USERNAME_FIELD = 'phone'
 
+    def formats_users(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+            "phone": self.phone
+        }
 
 class OTP(models.Model):
     email = models.CharField(max_length=20)
