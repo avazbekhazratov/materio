@@ -43,8 +43,8 @@ def regis(requests, params):
             "type": user_types(params['key'])
         })
 
-    user = User.objects.create_user(**user_data)
-    token = Token.objects.create(user=user)
+    userr = User.objects.create_user(**user_data)
+    token = Token.objects.create(user=userr)
     return custom_response(False, {
         "Success": "Ваш аккаунт успешно создан",
         "Ваш секретный ключ": token.key
