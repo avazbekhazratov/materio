@@ -54,6 +54,7 @@ def regis(requests, params):
     except Exception as e:
         return exception_data(e)
 
+
 def login(request, params):
     not_data = 'phone' if 'phone' not in params else 'password' if 'password' not in params else ''
     if not_data:
@@ -253,5 +254,3 @@ def StepTwo(request, params):
         "Succes": "Worked",
         'otp': code
     })
-
-
