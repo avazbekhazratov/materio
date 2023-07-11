@@ -20,7 +20,7 @@ def regis(requests, params):
     if otp.is_conf:
         return custom_response(False, {"Error": "Устаревший токен !"})
 
-    user = User.objects.filter(phone=otp.email).first()
+    user = User.objects.filter(phone=otp.phone).first()
 
     if user:
         return custom_response(False, {"Error": "Этот эмайл ранее был зарегистрирован"})
