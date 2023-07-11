@@ -1,5 +1,6 @@
 import datetime, re, random, string, uuid
-from methodism import custom_response, error_params_unfilled, MESSAGE, error_msg_unfilled, generate_key, code_decoder
+from methodism import custom_response, error_params_unfilled, MESSAGE, error_msg_unfilled, generate_key, code_decoder, \
+    exception_data
 from rest_framework.authtoken.models import Token
 from materio.models import User
 from base.server import check_email_in_db, check_token_in_db, check_user_in_token_db, update_token
@@ -8,48 +9,50 @@ from materio.models.auth import OTP, user_types
 
 
 def regis(requests, params):
-    nott = 'phone' if 'phone' not in params else 'password' if 'password' not in params else 'token' if 'token' not in params else 'username' if 'username' not in params else ''
-    if nott:
-        return custom_response(False, message=error_params_unfilled(nott))
+    try:
 
-    otp = OTP.objects.filter(key=params['token']).first()
+        nott = 'phone' if 'phone' not in params else 'password' if 'password' not in params else 'token' if 'token' not in params else 'username' if 'username' not in params else ''
+        if nott:
+            return custom_response(False, message=error_params_unfilled(nott))
 
-    if not otp:
-        return custom_response(False, {"Error": "Неверный токен !"})
+        otp = OTP.objects.filter(key=params['token']).first()
 
-    if otp.is_conf:
-        return custom_response(False, {"Error": "Устаревший токен !"})
+        if not otp:
+            return custom_response(False, {"Error": "Неверный токен !"})
 
-    user = User.objects.filter(email=otp.email).first()
+        if otp.is_conf:
+            return custom_response(False, {"Error": "Устаревший токен !"})
 
-    if user:
-        return custom_response(False, {"Error": "Этот эмайл ранее был зарегистрирован"})
+        user = User.objects.filter(email=otp.email).first()
 
-    if len(params['password']) < 8 or params['password'].isalnum() or " " in params['password']:
+        if user:
+            return custom_response(False, {"Error": "Этот эмайл ранее был зарегистрирован"})
+        if len(params['password']) < 8 or params['password'].isalnum() or " " in params['password']:
+            return custom_response(False, {
+                "Error": "Длина пароля должно быть не меннее 8 символов и больше 2х занков без пробелов !"})
+
+        user_data = {
+            "password": params['password'],
+            "username": params['username'],
+            "phone": params.get('phone', ''),
+            "email": OTP.objects.filter(email=params.get('email', otp.email))
+        }
+
+        if params.get('key', None):
+            user_data.update({
+                "is_staff": True,
+                "is_superuser": True,
+                "type": user_types(params['key'])
+            })
+
+        userr = User.objects.create_user(**user_data)
+        token = Token.objects.create(user=userr)
         return custom_response(False, {
-            "Error": "Длина пароля должно быть не меннее 8 символов и больше 2х занков без пробелов !"})
-
-    user_data = {
-        "password": params['password'],
-        "username": params['username'],
-        "phone": params.get('phone', ''),
-        "email": OTP.objects.filter(email=params.get('email', otp.email))
-    }
-
-    if params.get('key', None):
-        user_data.update({
-            "is_staff": True,
-            "is_superuser": True,
-            "type": user_types(params['key'])
+            "Success": "Ваш аккаунт успешно создан",
+            "Ваш секретный ключ": token.key
         })
-
-    userr = User.objects.create_user(**user_data)
-    token = Token.objects.create(user=userr)
-    return custom_response(False, {
-        "Success": "Ваш аккаунт успешно создан",
-        "Ваш секретный ключ": token.key
-    })
-
+    except Exception as e:
+        return exception_data(e)
 
 def login(request, params):
     not_data = 'phone' if 'phone' not in params else 'password' if 'password' not in params else ''
